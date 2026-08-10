@@ -38,4 +38,36 @@ jobs:
       - name: Ajouter les permissions Android (caméra, localisation, stockage, notifications)
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
-          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.location" android:required="false" />\n</manifest>#' "$MANIFEST"
+          cat "$MANIFEST"
+
+      - name: Rendre gradlew exécutable
+        run: chmod +x android/gradlew
+
+      - name: Copier la config Firebase (notifications push réelles)
+        run: cp resources/google-services.json android/app/google-services.json
+
+      - name: Ajouter la configuration de signature (build release, signature stable)
+        run: |
+          BUILD_GRADLE=android/app/build.gradle
+          sed -i 's#android {#android {\n    signingConfigs {\n        release {\n            storeFile file(System.getenv("KEYSTORE_PATH") ?: "nonexistent.keystore")\n            storePassword System.getenv("KEYSTORE_PASSWORD")\n            keyAlias System.getenv("KEY_ALIAS")\n            keyPassword System.getenv("KEY_PASSWORD")\n        }\n    }#' "$BUILD_GRADLE"
+          perl -0pi -e 's/(buildTypes \{\s*release \{\s*)minifyEnabled false/\1signingConfig signingConfigs.release\n            minifyEnabled false/' "$BUILD_GRADLE"
+          cat "$BUILD_GRADLE"
+
+      - name: Décoder le keystore de signature
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/mdm-release.keystore
+
+      - name: Construire l'APK (release, signé)
+        env:
+          KEYSTORE_PATH: mdm-release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: mdm
+          KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: cd android && ./gradlew assembleRelease --no-daemon
+
+      - name: Publier l'APK comme fichier téléchargeable
+        uses: actions/upload-artifact@v4
+        with:
+          name: maitre-de-maison-maitre-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 90
