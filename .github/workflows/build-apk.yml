@@ -38,21 +38,4 @@ jobs:
       - name: Ajouter les permissions Android (caméra, localisation, stockage, notifications)
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
-          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.location" android:required="false" />\n</manifest>#' "$MANIFEST"
-          cat "$MANIFEST"
-
-      - name: Rendre gradlew exécutable
-        run: chmod +x android/gradlew
-
-      - name: Copier la config Firebase (notifications push réelles)
-        run: cp resources/google-services.json android/app/google-services.json
-
-      - name: Construire l'APK (debug, non signé)
-        run: cd android && ./gradlew assembleDebug --no-daemon
-
-      - name: Publier l'APK comme fichier téléchargeable
-        uses: actions/upload-artifact@v4
-        with:
-          name: maitre-de-maison-maitre-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 90
+          sed -i 's#</manifest>#    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\n    <uses-permission
