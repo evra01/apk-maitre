@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Récupérer le code
         uses: actions/checkout@v4
@@ -71,3 +73,17 @@ jobs:
           name: maitre-de-maison-maitre-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 90
+
+      - name: Renommer l'APK pour la release publique
+        run: cp android/app/build/outputs/apk/release/app-release.apk maitre-de-maison-maitre.apk
+
+      - name: Publier une release GitHub avec un lien de téléchargement public permanent
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Dernière version
+          body: Build automatique — dernière version de l'app Maître.
+          files: maitre-de-maison-maitre.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
